@@ -71,7 +71,7 @@ describe('Part 1: API Integration Tests', () => {
     expect(res.body.error).toBe('Not Found');
   });
 
-  // Test pagination and filtering on GET /tickets
+  // Test pagination GET /tickets
   it('paginates tickets with limit and offset', async () => {
     // create user to make valid tickets
     const userRes = await request(app)
