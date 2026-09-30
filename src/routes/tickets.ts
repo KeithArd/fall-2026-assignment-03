@@ -7,6 +7,7 @@ import {
   GetAllTicketsOptions,
 } from '../dal/tickets.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { insertTimeLog, getTotalHoursForTicket } from '../dal/timeLogs.js';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get('/:id', async (req, res) => {
   // get ticket
   const ticket = await getTicketById(id);
 
-  // if no ticket found, repond 404 and return
+  // if no ticket found, respond 404 and return
   if (!ticket) {
     res.status(404).json({ error: 'Not Found' });
     return;
@@ -54,7 +55,7 @@ router.post('/', authMiddleware, async (req, res) => {
   // get creator id from res.locals (set by authMiddleware)
   const creatorId = res.locals.userId;
 
-  // create new ticket iwth title, description, and creator_id
+  // create new ticket with title, description, and creator_id
   const newTicket = await createTicket({
     title,
     description,
@@ -65,7 +66,7 @@ router.post('/', authMiddleware, async (req, res) => {
   res.status(201).json(newTicket);
 });
 
-// PATCH /tickets:id/status
+// PATCH /tickets/:id/status
 router.patch('/:id/status', authMiddleware, async (req, res) => {
   // get id param
   const id = Number(req.params.id);
@@ -86,8 +87,48 @@ router.patch('/:id/status', authMiddleware, async (req, res) => {
   res.json(updatedTicket);
 });
 
-// TODO: Student implementation - Part 2: Time Log Routes
 // POST /tickets/:id/time
+router.post('/:id/time', authMiddleware, async (req, res) => {
+  // get ticket id param
+  const ticketId = Number(req.params.id);
+
+  // get hours from body
+  const { hours } = req.body;
+
+  // get user id from res.locals (set by auth middleware)
+  const userId = res.locals.userId;
+
+  // if ticket doesn't exist, respond 404 and return
+  const ticket = await getTicketById(ticketId);
+  if (!ticket) {
+    res.status(404).json({ error: 'Not Found' });
+    return;
+  }
+
+  // create time log
+  const timeLog = await insertTimeLog(ticketId, userId, hours);
+
+  // respond with created time log as json, status 201
+  res.status(201).json(timeLog);
+});
+
 // GET /tickets/:id/time
+router.get('/:id/time', async (req, res) => {
+  // get ticket id param
+  const ticketId = Number(req.params.id);
+
+  // if ticket doesn't exist, respond 404 and return
+  const ticket = await getTicketById(ticketId);
+  if (!ticket) {
+    res.status(404).json({ error: 'Not Found' });
+    return;
+  }
+
+  // get total hours
+  const totalHours = await getTotalHoursForTicket(ticketId);
+
+  // respond with ticket id and total hours
+  res.json({ ticket_id: ticketId, total_hours: totalHours });
+});
 
 export default router;
